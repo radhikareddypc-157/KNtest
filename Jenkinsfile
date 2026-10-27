@@ -4,11 +4,16 @@ pipeline {
         maven 'Maven -3.10.0'
         jdk 'JDK17'
     }
+    environment {
+        KUBECONFIG = 'C:\\Users\\HP\\.kube\\config'
+        DOCKER = '"C:\\Users\\HP\\AppData\\Local\\Programs\\DockerDesktop\\resources\\bin\\docker.exe"'
+        KUBECTL = '"C:\\Users\\HP\\AppData\\Local\\Programs\\DockerDesktop\\resources\\bin\\kubectl.exe"'
+    }
     stages {
         stage('SET 1: Verify K8s Connection') {
             steps {
-                bat '"C:\\Users\\HP\\AppData\\Local\\Programs\\DockerDesktop\\resources\\bin\\kubectl.exe" cluster-info'
-                bat '"C:\\Users\\HP\\AppData\\Local\\Programs\\DockerDesktop\\resources\\bin\\kubectl.exe" get nodes'
+                bat '%KUBECTL% cluster-info'
+                bat '%KUBECTL% get nodes'
             }
         }
         stage('Build Maven') {
@@ -16,59 +21,52 @@ pipeline {
                 bat 'mvn clean package -DskipTests'
             }
         }
-        stage('SET 12 & 15: Build Docker Image') {
+        stage('Build Docker Image') {
             steps {
-                bat '"C:\\Users\\HP\\AppData\\Local\\Programs\\DockerDesktop\\resources\\bin\\docker.exe" build -t greatest-java-app:latest .'
-                bat '"C:\\Users\\HP\\AppData\\Local\\Programs\\DockerDesktop\\resources\\bin\\docker.exe" build -t greatest-java-app:v2 .'
+                bat '%DOCKER% build -t greatest-java-app:latest .'
+                bat '%DOCKER% build -t greatest-java-app:v2 .'
             }
         }
         stage('SET 3: Create Pod') {
             steps {
-                bat '"C:\\Users\\HP\\AppData\\Local\\Programs\\DockerDesktop\\resources\\bin\\kubectl.exe" apply -f k8s/pod.yaml'
+                bat '%KUBECTL% apply -f k8s/pod.yaml'
             }
         }
         stage('SET 8: ConfigMap') {
             steps {
-                bat '"C:\\Users\\HP\\AppData\\Local\\Programs\\DockerDesktop\\resources\\bin\\kubectl.exe" apply -f k8s/configmap.yaml'
+                bat '%KUBECTL% apply -f k8s/configmap.yaml'
             }
         }
         stage('SET 9: PVC') {
             steps {
-                bat '"C:\\Users\\HP\\AppData\\Local\\Programs\\DockerDesktop\\resources\\bin\\kubectl.exe" apply -f k8s/pvc.yaml'
+                bat '%KUBECTL% apply -f k8s/pvc.yaml'
             }
         }
-        stage('SET 2,4,10: Deploy with Readiness Probe') {
+        stage('SET 2,4,10: Deploy') {
             steps {
-                bat '"C:\\Users\\HP\\AppData\\Local\\Programs\\DockerDesktop\\resources\\bin\\kubectl.exe" apply -f k8s/deployment.yaml'
+                bat '%KUBECTL% apply -f k8s/deployment.yaml'
             }
         }
         stage('SET 5: Expose Service') {
             steps {
-                bat '"C:\\Users\\HP\\AppData\\Local\\Programs\\DockerDesktop\\resources\\bin\\kubectl.exe" apply -f k8s/service.yaml'
+                bat '%KUBECTL% apply -f k8s/service.yaml'
             }
         }
-        stage('SET 6: Scale to 3 Replicas') {
+        stage('SET 6: Scale to 3') {
             steps {
-                bat '"C:\\Users\\HP\\AppData\\Local\\Programs\\DockerDesktop\\resources\\bin\\kubectl.exe" scale deployment java-app-deployment --replicas=3'
-                bat '"C:\\Users\\HP\\AppData\\Local\\Programs\\DockerDesktop\\resources\\bin\\kubectl.exe" get pods'
+                bat '%KUBECTL% scale deployment java-app-deployment --replicas=3'
+                bat '%KUBECTL% get pods'
             }
         }
-        stage('SET 7: Update Image') {
+        stage('SET 7 & 13: Rolling Update') {
             steps {
-                bat '"C:\\Users\\HP\\AppData\\Local\\Programs\\DockerDesktop\\resources\\bin\\kubectl.exe" set image deployment/java-app-deployment java-container=greatest-java-app:v2 || exit 0'
+                bat '%KUBECTL% set image deployment/java-app-deployment java-container=greatest-java-app:v2 || exit 0'
+                bat '%KUBECTL% rollout status deployment/java-app-deployment'
             }
         }
-        stage('SET 13: Rolling Update Status') {
+        stage('SET 14: Verify All') {
             steps {
-                bat '"C:\\Users\\HP\\AppData\\Local\\Programs\\DockerDesktop\\resources\\bin\\kubectl.exe" rollout status deployment/java-app-deployment'
-                bat '"C:\\Users\\HP\\AppData\\Local\\Programs\\DockerDesktop\\resources\\bin\\kubectl.exe" rollout history deployment/java-app-deployment || exit 0'
-            }
-        }
-        stage('SET 14: Troubleshoot Check') {
-            steps {
-                bat '"C:\\Users\\HP\\AppData\\Local\\Programs\\DockerDesktop\\resources\\bin\\kubectl.exe" get pods,svc,deployments,pvc,configmaps'
-                bat '"C:\\Users\\HP\\AppData\\Local\\Programs\\DockerDesktop\\resources\\bin\\kubectl.exe" describe pod -l app=java-app || exit 0'
-                bat '"C:\\Users\\HP\\AppData\\Local\\Programs\\DockerDesktop\\resources\\bin\\kubectl.exe" get events --sort-by=.lastTimestamp | findstr java-app || exit 0'
+                bat '%KUBECTL% get pods,svc,deployments,pvc,configmaps'
             }
         }
     }
