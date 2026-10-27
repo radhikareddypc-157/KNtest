@@ -1,28 +1,29 @@
 pipeline {
     agent any
     stages {
-        stage('Build') {
+        stage('Build with Maven') {
             steps {
-                bat 'javac GreatestOfThree.java TestGreatest.java'
+                bat 'mvn clean compile'
             }
         }
-        stage('Test') {
+        stage('Test with Maven') {
             steps {
-                bat 'java TestGreatest'
+                bat 'mvn test'
             }
         }
         stage('Create Docker Image') {
             steps {
-                bat '"C:\\Program Files\\Docker\\Docker\\resources\\bin\\docker.exe" build -t greatest-java-app .'
+                bat 'docker build -t greatest-java-app .'
             }
         }
         stage('Start and Stop Container') {
             steps {
-                bat '"C:\\Program Files\\Docker\\Docker\\resources\\bin\\docker.exe" rm -f my-java-container || exit 0'
-                bat '"C:\\Program Files\\Docker\\Docker\\resources\\bin\\docker.exe" run -d --name my-java-container greatest-java-app'
-                bat '"C:\\Program Files\\Docker\\Docker\\resources\\bin\\docker.exe" ps -a'
-                bat '"C:\\Program Files\\Docker\\Docker\\resources\\bin\\docker.exe" stop my-java-container || exit 0'
-                bat '"C:\\Program Files\\Docker\\Docker\\resources\\bin\\docker.exe" rm -f my-java-container'
+                bat 'docker rm -f my-java-container || exit 0'
+                bat 'docker run -d --name my-java-container greatest-java-app'
+                bat 'docker ps -a'
+                bat 'docker logs my-java-container'
+                bat 'docker stop my-java-container || exit 0'
+                bat 'docker rm -f my-java-container'
             }
         }
     }
