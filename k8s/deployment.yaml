@@ -2,6 +2,8 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: java-app-deployment
+  labels:
+    app: java-app
 spec:
   replicas: 1
   selector:
@@ -13,15 +15,15 @@ spec:
         app: java-app
     spec:
       containers:
-            - name: java-container
-        image: greatest-java-app:latest
-        imagePullPolicy: Never
-        ports:
-                - containerPort: 8080
-        readinessProbe:
-          exec:
-            command:
-                        - echo
-                        - ready
-          initialDelaySeconds: 5
-          periodSeconds: 10
+        - name: java-container
+          image: greatest-java-app:latest
+          imagePullPolicy: Never
+          ports:
+            - containerPort: 8080
+          readinessProbe:
+            exec:
+              command:
+                - ls
+                - /app
+            initialDelaySeconds: 5
+            periodSeconds: 5
