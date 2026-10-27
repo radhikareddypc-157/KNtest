@@ -20,6 +20,8 @@ spec:
                 - containerPort: 8080
         readinessProbe:
           exec:
-            command: ["echo", "ready"]
+            command:
+                        - echo
+                        - ready
           initialDelaySeconds: 5
           periodSeconds: 10
